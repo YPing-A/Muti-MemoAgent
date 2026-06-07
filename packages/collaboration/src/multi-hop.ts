@@ -50,7 +50,8 @@ export class MultiHopReasoner {
 
       if (depth >= maxHops) continue;
 
-      const edges = (graph as any).adj?.get(agent) as
+      // SAFETY: CrossAgentGraph has an internal adj map that's not exposed in types
+      const edges = (graph as unknown as { adj: Map<string, Map<string, CrossAgentRelation>> }).adj?.get(agent) as
         | Map<string, CrossAgentRelation>
         | undefined;
       if (!edges) continue;
@@ -115,7 +116,8 @@ export class MultiHopReasoner {
       const current = queue.shift()!;
 
       // Outgoing
-      const edges = (graph as any).adj?.get(current) as
+      // SAFETY: CrossAgentGraph has an internal adj map that's not exposed in types
+      const edges = (graph as unknown as { adj: Map<string, Map<string, CrossAgentRelation>> }).adj?.get(current) as
         | Map<string, CrossAgentRelation>
         | undefined;
       if (edges) {

@@ -41,3 +41,6 @@ export type {
   ConflictType,
   ConflictResolutionStatus,
 } from './conflict.js';
+
+// 重要性评分
+export { ImportanceScorer } from './importance.js';

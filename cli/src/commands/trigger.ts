@@ -7,7 +7,7 @@ import {
   PipelineOrchestrator,
   isValidEvent,
   getEventNames,
-} from '@memograph/events';
+} from '@memograph/sdk';
 import chalk from 'chalk';
 
 export interface TriggerOptionsCLI {

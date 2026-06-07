@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Multi-MemoAgent Dashboard</title>
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0f1117; color: #e1e4e8; }
+    .header { background: #161b22; border-bottom: 1px solid #30363d; padding: 16px 24px; display:flex; justify-content:space-between; align-items:center; }
+    .header h1 { font-size: 20px; font-weight: 600; }
+    .header .badge { background: #238636; color: #fff; padding: 4px 12px; border-radius: 12px; font-size: 12px; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; padding: 24px; max-width: 1400px; margin: 0 auto; }
+    .card { background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 20px; }
+    .card h3 { font-size: 14px; color: #8b949e; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .stat-row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #21262d; }
+    .stat-row:last-child { border-bottom: none; }
+    .stat-label { color: #8b949e; }
+    .stat-value { color: #58a6ff; font-weight: 600; }
+    .tag { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; margin: 2px; }
+    .tag-blue { background: #1f6feb33; color: #58a6ff; }
+    .tag-green { background: #23863633; color: #3fb950; }
+    .empty-state { text-align: center; color: #8b949e; padding: 40px; }
+    .btn { background: #21262d; border: 1px solid #30363d; color: #c9d1d9; padding: 6px 16px; border-radius: 6px; cursor: pointer; font-size: 13px; }
+    .btn-primary { background: #238636; border-color: #2ea043; }
+    .full-width { grid-column: 1 / -1; }
+    .agent-bar { background: #21262d; border-radius: 4px; height: 8px; margin: 4px 0; overflow: hidden; }
+    .agent-bar-fill { height: 100%; border-radius: 4px; transition: width 0.3s; }
+    .agent-bar-fill.good { background: #238636; }
+    .agent-bar-fill.warn { background: #d29922; }
+    .timeline-item { padding: 8px 0; border-left: 2px solid #30363d; padding-left: 12px; margin-left: 8px; margin-bottom: 4px; }
+    .timeline-item .time { font-size: 11px; color: #8b949e; }
+    .timeline-item .agent { color: #58a6ff; }
+    .timeline-item .detail { font-size: 12px; color: #8b949e; margin-top: 2px; }
+    .stats-summary { display: flex; gap: 16px; margin-bottom: 12px; }
+    .stats-summary span { color: #8b949e; font-size: 13px; }
+    .node-tag { padding: 6px 12px; border: 1px solid; border-radius: 6px; font-size: 13px; display: inline-flex; align-items: center; gap: 6px; margin: 4px; }
+    .node-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+    .node-group { font-size: 10px; color: #8b949e; margin-left: 4px; }
+    .edge-section { border-top: 1px solid #21262d; padding-top: 12px; }
+    .edge-item { padding: 4px 0; font-size: 13px; }
+    .edge-item .arrow { color: #8b949e; margin: 0 8px; }
+    .edge-item .weight { font-size: 11px; color: #58a6ff; float: right; }
+    .search-bar { display: flex; gap: 8px; margin-bottom: 16px; }
+    .search-bar input { flex: 1; background: #0d1117; border: 1px solid #30363d; border-radius: 6px; padding: 8px 12px; color: #e1e4e8; font-size: 14px; outline: none; }
+    .result-item { padding: 10px 0; border-bottom: 1px solid #21262d; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>🧠 Multi-MemoAgent</h1>
+    <div>
+      <span id="connection-status" class="badge">Connected</span>
+      <span style="color:#8b949e;font-size:13px;margin-left:12px;" id="last-update"></span>
+    </div>
+  </div>
+  <div class="grid" id="dashboard">
+    <div class="card empty-state">Loading...</div>
+  </div>
+  <script>
+    const API = 'http://localhost:3456';
+
+    async function loadState() {
+      try {
+        const res = await fetch(API + '/api/state');
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const state = await res.json();
+        render(state);
+        const now = new Date().toLocaleTimeString();
+        document.getElementById('last-update').textContent = 'Updated ' + now;
+        document.getElementById('connection-status').textContent = 'Connected';
+        document.getElementById('connection-status').style.background = '#238636';
+      } catch (e) {
+        document.getElementById('connection-status').textContent = 'Disconnected';
+        document.getElementById('connection-status').style.background = '#da3633';
+      }
+    }
+
+    function render(state) {
+      const { agents, stats, evolution, graph } = state;
+      const grid = document.getElementById('dashboard');
+      let html = '';
+
+      // Stats card
+      html += '<div class="card"><h3>System Overview</h3>';
+      html += statRow('Total Agents', (stats && stats.totalAgents) || 0);
+      html += statRow('Total Entries', ((stats && stats.totalEntries) || 0).toLocaleString());
+      html += statRow('Cross-Agent Relations', (stats && stats.crossAgentRelations) || 0);
+      html += statRow('Last Evolution', (stats && stats.lastEvolution) ? new Date(stats.lastEvolution).toLocaleString() : 'Never');
+      html += '</div>';
+
+      // Agent health
+      html += '<div class="card"><h3>Agent Health</h3>';
+      if (!agents || agents.length === 0) {
+        html += '<div class="empty-state">No agents yet. Run <code>memograph init</code></div>';
+      } else {
+        for (const a of agents) {
+          const pct = Math.round((a.fitness || 0.5) * 100);
+          const cls = pct >= 70 ? 'good' : pct >= 40 ? 'warn' : 'bad';
+          const tagCls = pct >= 70 ? 'tag-green' : 'tag-blue';
+          html += '<div style="margin-bottom:12px;">';
+          html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">';
+          html += '<span>' + (a.name || a.id) + '</span>';
+          html += '<span class="tag ' + tagCls + '">' + pct + '%</span></div>';
+          html += '<div class="agent-bar"><div class="agent-bar-fill ' + cls + '" style="width:' + pct + '%"></div></div>';
+          html += '<div style="font-size:11px;color:#8b949e;margin-top:2px;">Entries: ' + (a.entryCount || 0) + '</div>';
+          html += '</div>';
+        }
+      }
+      html += '</div>';
+
+      // Timeline
+      html += '<div class="card"><h3>Evolution Timeline</h3>';
+      if (!evolution || evolution.length === 0) {
+        html += '<div class="empty-state">No evolution events yet</div>';
+      } else {
+        for (const e of evolution.slice(0, 10)) {
+          html += '<div class="timeline-item">';
+          html += '<div class="time">' + new Date(e.timestamp).toLocaleString() + '</div>';
+          html += '<div style="font-weight:600"><span class="agent">' + e.agent + '</span>: ' + e.event + '</div>';
+          html += '<div class="detail">' + (e.detail || '') + '</div></div>';
+        }
+      }
+      html += '</div>';
+
+      // Graph card (full width)
+      html += '<div class="card full-width"><h3>Cross-Agent Graph</h3>';
+      if (!graph || !graph.nodes || graph.nodes.length === 0) {
+        html += '<div class="empty-state">No graph data</div>';
+      } else {
+        html += '<div class="stats-summary">';
+        html += '<span>' + graph.nodes.length + ' nodes</span>';
+        html += '<span>' + (graph.edges || []).length + ' edges</span></div>';
+        const colors = { profile: '#58a6ff', project: '#3fb950', mcp: '#d29922', domain: '#f85149' };
+        for (const n of graph.nodes) {
+          const c = colors[n.group] || '#8b949e';
+          html += '<span class="node-tag" style="border-color:' + c + '">';
+          html += '<span class="node-dot" style="background:' + c + '"></span> ' + n.label;
+          html += '<span class="node-group">' + n.group + '</span></span>';
+        }
+      }
+      html += '</div>';
+
+      grid.innerHTML = html;
+    }
+
+    function statRow(label, value) {
+      return '<div class="stat-row"><span class="stat-label">' + label + '</span><span class="stat-value">' + value + '</span></div>';
+    }
+
+    loadState();
+    setInterval(loadState, 10000);
+  </script>
+</body>
+</html>

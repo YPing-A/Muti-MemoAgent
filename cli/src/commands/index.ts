@@ -73,7 +73,8 @@ export async function indexCommand(options: IndexOptionsCLI): Promise<void> {
       api_base: config.xiami.api_base,
       platform_key: config.xiami.platform_key,
     });
-    const memoryStore = new MemoryStore(xiamiClient as any, db as any);
+    // SAFETY: XiamiClientImpl and LocalDBImpl need casting to match memory's interfaces
+    const memoryStore = new MemoryStore(xiamiClient as unknown as import('@memograph/memory').XiamiClient, db as unknown as import('@memograph/memory').LocalDB);
     const embedder = createEmbedder(256);
     const llmClient = new BaseLLMClient({
       provider: 'openai',
@@ -166,7 +167,8 @@ export async function indexCommand(options: IndexOptionsCLI): Promise<void> {
       try {
         const {CognitivePipeline} = await import('@memograph/cognitive');
         const cognitive = new CognitivePipeline();
-        const result = await cognitive.run({rootPath: cwd} as any);
+        // SAFETY: CognitivePipeline.run accepts flexible options with rootPath
+        const result = await cognitive.run({rootPath: cwd} as Parameters<typeof cognitive.run>[0]);
         console.log(`  ${chalk.green('✅')} Cognitive analysis complete`);
         if (result && result.stats) {
           console.log(`     ${result.stats.totalNodes} knowledge nodes, ${result.stats.totalEdges} edges`);

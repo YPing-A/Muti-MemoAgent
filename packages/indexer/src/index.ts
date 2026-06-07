@@ -4,6 +4,7 @@
 
 // Core Indexer
 export { CodeIndexer } from './indexer.js';
+export type { MemoryEntry } from './indexer.js';
 export type { IndexOptions, IndexResult } from './types.js';
 
 // Extraction

@@ -46,7 +46,8 @@ export async function memoCommand(
       api_base: config.xiami.api_base,
       platform_key: config.xiami.platform_key,
     });
-    const memoryStore = new MemoryStore(xiamiClient as any, db as any);
+    // SAFETY: XiamiClientImpl and LocalDBImpl need casting to match memory's interfaces
+    const memoryStore = new MemoryStore(xiamiClient as unknown as import('@memograph/memory').XiamiClient, db as unknown as import('@memograph/memory').LocalDB);
     const embedder = createEmbedder(256);
     const llmClient = new BaseLLMClient({
       provider: 'openai',

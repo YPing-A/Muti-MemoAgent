@@ -9,6 +9,7 @@ import type {
   ChangeRecord,
 } from '@memograph/core';
 import { checksum, generateId, now } from '@memograph/core';
+import { ImportanceScorer } from './importance.js';
 
 // ═══════════════════════════════════════════════════════════════
 // 创建参数
@@ -93,13 +94,17 @@ export function createEntry(params: CreateEntryParams): MemoryEntry {
       language: params.language,
       file_refs: params.file_refs,
       agent_refs: params.agent_refs,
-      importance_score: 0.5,
+      importance_score: 0.5, // will be overridden below
     },
     local_cache: {
       checksum: checksum(params.content),
       indexed_at: timestamp,
     },
   };
+
+  // Auto-score importance using ImportanceScorer
+  const scorer = new ImportanceScorer();
+  entry.metadata.importance_score = scorer.score(entry);
 
   return entry;
 }

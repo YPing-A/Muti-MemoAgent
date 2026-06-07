@@ -4,7 +4,8 @@
 // profile agent, and MCP registry in parallel, then merges results.
 // ────────────────────────────────────────────────────────────────
 
-import type { SearchResult, CrossAgentRelation } from '@memograph/core';
+import type { SearchResult, CrossAgentRelation, MemoryEntry } from '@memograph/core';
+import { cosineSimilarity } from '@memograph/core';
 import { XiamiClient } from '@memograph/persist';
 import { CrossAgentGraph } from './cross-agent-graph.js';
 
@@ -26,6 +27,8 @@ interface WeightedResultSet {
   weight: number;
 }
 
+export type SearchMode = 'semantic' | 'keyword' | 'hybrid';
+
 // ── CollaborativeSearch ───────────────────────────────────
 
 export class CollaborativeSearch {
@@ -43,6 +46,7 @@ export class CollaborativeSearch {
     primaryAgentId: string,
     graph: CrossAgentGraph,
     xiamiClient: XiamiClient,
+    searchMode: SearchMode = 'hybrid',
   ): Promise<CollaborativeResult> {
     // ── Step 1: Search primary agent ───────────────────────
     const primaryResults = await xiamiClient.search({
@@ -140,9 +144,86 @@ export class CollaborativeSearch {
     }
 
     const merged = this.mergeResults(resultSets);
-    const enriched = await this.enrichWithContext(merged, graph);
+    const ranked = this.rankResults(query, merged);
+    const enriched = await this.enrichWithContext(ranked, graph);
 
     return { results: enriched };
+  }
+
+  /**
+   * Multi-signal ranking: re-rank search results using a weighted blend of
+   * semantic similarity, keyword relevance, recency, importance, and access count.
+   *
+   * Ranking formula:
+   *   finalScore = semanticScore * 0.4 + keywordScore * 0.3 + recencyBoost * 0.15 + importanceBoost * 0.15
+   *
+   * Where:
+   *   - semanticScore = cosine similarity between query embedding and entry embedding (0–1)
+   *   - keywordScore  = original text-match score (0–1)
+   *   - recencyBoost  = 1 / (1 + daysSinceCreation/30)
+   *   - importanceBoost = metadata.importance_score (normalised 0–1)
+   */
+  rankResults(query: string, results: SearchResult[]): SearchResult[] {
+    const queryWords = query.toLowerCase().split(/\s+/).filter(Boolean);
+
+    return results
+      .map((result) => {
+        const entry = result.entry;
+        const embeddings = entry.embeddings;
+
+        // ── Semantic score (cosine similarity) ──
+        // If the entry has stored embeddings, build a simple query vector
+        // of the same dimension and compute cosine similarity.
+        // Otherwise estimate from keyword overlap in the content.
+        let semanticScore = 0;
+        if (embeddings && embeddings.length > 0) {
+          // Build a simple bag-of-words query vector matching dimension size
+          const dim = embeddings.length;
+          const queryVec = new Array(dim).fill(0);
+          for (const word of queryWords) {
+            for (let i = 0; i < word.length; i++) {
+              queryVec[word.charCodeAt(i) % dim] += 1;
+            }
+          }
+          const qNorm = Math.sqrt(queryVec.reduce((s, v) => s + v * v, 0));
+          if (qNorm > 0) {
+            for (let i = 0; i < dim; i++) queryVec[i] /= qNorm;
+          }
+          semanticScore = cosineSimilarity(queryVec, embeddings);
+        } else {
+          // Fallback: keyword overlap ratio
+          const content = entry.content.toLowerCase();
+          const matches = queryWords.filter((w) => content.includes(w)).length;
+          semanticScore = queryWords.length > 0 ? matches / queryWords.length : 0;
+        }
+
+        // ── Keyword score: the match score already assigned by the search ──
+        const keywordScore = result.score;
+
+        // ── Recency boost: newer entries score higher ──
+        const daysSinceCreation =
+          (Date.now() - entry.lifecycle.created_at) / 86_400_000;
+        const recencyBoost = 1 / (1 + daysSinceCreation / 30);
+
+        // ── Importance boost ──
+        const importanceBoost = entry.metadata.importance_score;
+
+        // ── Access count boost ──
+        const accessBoost = Math.min(1, entry.lifecycle.access_count / 50);
+
+        // ── Weighted blend ──
+        const finalScore =
+          semanticScore * 0.4 +
+          keywordScore * 0.3 +
+          recencyBoost * 0.15 +
+          Math.min(1, importanceBoost + accessBoost) * 0.15;
+
+        return {
+          ...result,
+          score: finalScore,
+        };
+      })
+      .sort((a, b) => b.score - a.score);
   }
 
   /**

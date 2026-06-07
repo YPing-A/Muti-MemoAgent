@@ -10,6 +10,7 @@
     { "path": "packages/cognitive" },
     { "path": "packages/evolution" },
     { "path": "packages/sdk" },
-    { "path": "cli" }
+    { "path": "cli" },
+    { "path": "mcp-server" }
   ]
 }

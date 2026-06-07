@@ -49,7 +49,8 @@ export class BaseLLMClient implements LLMClient {
       throw new Error(`LLM API error: ${response.status} ${response.statusText}`);
     }
 
-    const data = await response.json() as any;
+    // SAFETY: OpenAI-style API response — parse as unknown to avoid any
+    const data = await response.json() as { choices?: { message?: { content?: string } }[] };
     return data.choices?.[0]?.message?.content || '';
   }
 

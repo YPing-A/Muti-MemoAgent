@@ -84,8 +84,24 @@ export class XiamiClient {
   private readonly platformKey: string;
 
   constructor(config: XiamiClientConfig) {
-    this.apiBase = config.api_base.replace(/\/+$/, '');
+    this.apiBase = XiamiClient.normalizeApiBase(config.api_base);
     this.platformKey = config.platform_key;
+  }
+
+  /**
+   * Normalize the API base URL:
+   * - Auto-append /api/v1 if not present
+   * - Strip trailing slashes
+   */
+  static normalizeApiBase(base: string): string {
+    let url = base.trim();
+    // Strip trailing slashes
+    url = url.replace(/\/+$/, '');
+    // Auto-append /api/v1 if not already present
+    if (!url.endsWith('/api/v1')) {
+      url = url + '/api/v1';
+    }
+    return url;
   }
 
   // ── Private helpers ──────────────────────────────────────────
@@ -114,12 +130,18 @@ export class XiamiClient {
       body: body !== undefined ? JSON.stringify(body) : undefined,
     });
 
-    // ── Rate-limit: exponential backoff ──────────────────────
-    if (res.status === 429 && attempt < MAX_RETRIES) {
-      const retryAfter = res.headers.get('Retry-After');
-      const delayMs = retryAfter
-        ? parseInt(retryAfter, 10) * 1_000
-        : INITIAL_BACKOFF_MS * Math.pow(2, attempt);
+    // ── Server errors (5xx) and rate-limit (429): exponential backoff ──
+    const isRetryable = res.status === 429 || (res.status >= 500 && res.status < 600);
+    if (isRetryable && attempt < MAX_RETRIES) {
+      let delayMs: number;
+      if (res.status === 429) {
+        const retryAfter = res.headers.get('Retry-After');
+        delayMs = retryAfter
+          ? parseInt(retryAfter, 10) * 1_000
+          : INITIAL_BACKOFF_MS * Math.pow(2, attempt);
+      } else {
+        delayMs = INITIAL_BACKOFF_MS * Math.pow(2, attempt) + Math.random() * 500;
+      }
 
       await new Promise((resolve) => setTimeout(resolve, delayMs));
       return this.request<T>(method, path, body, attempt + 1);
@@ -144,6 +166,27 @@ export class XiamiClient {
       } catch {
         errorBody = null;
       }
+    }
+
+    // Throw descriptive errors for known status codes
+    if (res.status === 401) {
+      throw new Error('Xiami authentication failed — check your platform key');
+    }
+
+    if (res.status === 403) {
+      const quotaDetail =
+        typeof errorBody === 'object' && errorBody !== null
+          ? JSON.stringify(errorBody)
+          : 'quota exceeded or access denied';
+      throw new Error(`Xiami access denied (403): ${quotaDetail}`);
+    }
+
+    if (!res.ok) {
+      const detail =
+        typeof errorBody === 'string'
+          ? errorBody
+          : JSON.stringify(errorBody ?? 'unknown error');
+      throw new Error(`Xiami API error ${res.status} ${res.statusText}: ${detail}`);
     }
 
     throw new XiamiApiError(res.status, res.statusText, errorBody);

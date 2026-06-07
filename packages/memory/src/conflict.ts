@@ -258,8 +258,10 @@ export class ConflictDetector {
       throw new Error(`Entry ${flagId} is not a conflict flag`);
     }
 
-    const entryAId = (flag.structured_data as any)?.entry_a_id as string;
-    const entryBId = (flag.structured_data as any)?.entry_b_id as string;
+    // SAFETY: structured_data can be any Record<string, unknown>, typed here for access
+    const sd = flag.structured_data as Record<string, unknown>;
+    const entryAId = sd?.entry_a_id as string;
+    const entryBId = sd?.entry_b_id as string;
 
     if (!entryAId || !entryBId) {
       throw new Error(`Conflict flag ${flagId} missing entry references`);

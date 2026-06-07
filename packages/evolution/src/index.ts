@@ -29,5 +29,5 @@ export type { CompetitionResult } from './agent-evolve/competition.js';
 export { EvolutionLifecycle } from './agent-evolve/lifecycle.js';
 export type { LifecycleState } from './agent-evolve/lifecycle.js';
 
-export { EvolutionScheduler } from './agent-evolve/scheduler.js';
+export { EvolutionScheduler, CronScheduler, DreamConsolidator, ForgettingEngine, registerDefaultCronJobs } from './agent-evolve/scheduler.js';
 export type { EvolutionCycleResult } from './agent-evolve/scheduler.js';

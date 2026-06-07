@@ -57,7 +57,8 @@ export async function analyzeCommand(options: AnalyzeOptionsCLI): Promise<void> 
       api_base: config.xiami.api_base,
       platform_key: config.xiami.platform_key,
     });
-    const memoryStore = new MemoryStore(xiamiClient as any, db as any);
+    // SAFETY: XiamiClientImpl and LocalDBImpl need casting to match memory's interfaces
+    const memoryStore = new MemoryStore(xiamiClient as unknown as import('@memograph/memory').XiamiClient, db as unknown as import('@memograph/memory').LocalDB);
     const llmClient = new BaseLLMClient({
       provider: 'openai',
       apiKey: process.env.OPENAI_API_KEY || process.env.XIAMI_LLM_KEY || '',
@@ -79,7 +80,8 @@ export async function analyzeCommand(options: AnalyzeOptionsCLI): Promise<void> 
         language: options.language,
       };
 
-      const result = await cognitive.run(pipelineOptions as any);
+      // SAFETY: CognitivePipeline.run accepts flexible options with rootPath
+      const result = await cognitive.run(pipelineOptions as Parameters<typeof cognitive.run>[0]);
       spinner.succeed('Cognitive analysis complete');
 
       if (result && result.stats) {

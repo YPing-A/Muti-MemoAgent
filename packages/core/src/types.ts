@@ -358,6 +358,36 @@ export interface MemoryTierConfig {
   consolidation_threshold?: number;
 }
 
+// ═══════════════════════════════════════════════════════════════
+// Code Indexer Types (stubs for ICodeIndexer interface)
+// ═══════════════════════════════════════════════════════════════
+
+export interface IndexOptions {
+  include?: string[];
+  exclude?: string[];
+  followSymlinks?: boolean;
+  enableCrossLanguage?: boolean;
+  maxDepth?: number;
+}
+
+export interface IndexResult {
+  symbols: SymbolNode[];
+  totalFiles: number;
+  totalSymbols: number;
+  errors: string[];
+}
+
+export interface SymbolNode {
+  name: string;
+  kind: 'function' | 'class' | 'interface' | 'type' | 'variable' | 'method' | 'property';
+  path: string;
+  language: string;
+  startLine: number;
+  endLine: number;
+  signature?: string;
+  doc?: string;
+}
+
 export const MEMORY_TIER_MAP: Record<MemoryType, MemoryTier> = {
   fact: 'long_term',
   preference: 'permanent',

@@ -1,5 +1,5 @@
 // ─────────────────────────────────────────────────────────────────
-// @memograph/events — Public API
+// @memograph/sdk — Events (migrated from @memograph/events)
 // ─────────────────────────────────────────────────────────────────
 
 export { EventBus } from './bus.js';

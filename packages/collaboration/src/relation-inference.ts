@@ -69,7 +69,8 @@ export class RelationInference {
     }
 
     // ── Rule 2: PREFERENCE → TOOL match ───────────────
-    const prefA = groupedA.get('PREFERENCE' as any) ?? []; // stored as 'preference'?? No, Entity.type is string union
+    // SAFETY: Entity.type is a string union that may include 'PREFERENCE' as a normalized form
+    const prefA = groupedA.get('PREFERENCE' as import('@memograph/core').EntityType) ?? [];
     const prefEntitiesA = entitiesA.filter((e) => e.type === 'PROCESS'); // preferences are stored as PROCESS-ish
     const toolsB = groupedB.get('TOOL') ?? [];
     for (const pref of prefEntitiesA) {

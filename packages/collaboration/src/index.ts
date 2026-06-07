@@ -11,4 +11,4 @@ export type { WikiResult } from './wiki-builder.js';
 export { DiscoveryEngine } from './discovery.js';
 export type { DiscoveryReport } from './discovery.js';
 export { CollaborativeSearch } from './search.js';
-export type { CollaborativeResult } from './search.js';
+export type { CollaborativeResult, SearchMode } from './search.js';

@@ -1,6 +1,7 @@
 {
   "name": "@memograph/persist",
   "version": "0.1.0",
+  "private": true,
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -28,5 +29,11 @@
   },
   "publishConfig": {
     "access": "public"
-  }
+  },
+  "license": "SEE LICENSE IN LICENSE",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ran162154/Muti-MemoAgent.git"
+  },
+  "homepage": "https://github.com/ran162154/Muti-MemoAgent#readme"
 }

@@ -1,3 +1,6 @@
+import fs from 'fs';
+import path from 'path';
+
 import {
   type IngestEvent,
   type MemoryEntry,
@@ -10,6 +13,8 @@ import {
   now,
 } from '@memograph/core';
 import type {MemoryStore} from '@memograph/memory';
+import {CodeIndexer} from '@memograph/indexer';
+import type {MemoryEntry as IndexerMemoryEntry} from '@memograph/indexer';
 
 import {SignalFilter} from './filter/signal-filter.js';
 import {DedupDetector} from './filter/dedup.js';
@@ -149,6 +154,120 @@ export class IngestPipeline {
     return Promise.all(events.map(e => this.process(e)));
   }
 
+  // ── Code Indexing Integration ────────────────────────────────
+
+  /**
+   * Process code files through the indexer, then route extracted symbols
+   * through the ingest pipeline ONCE (no double processing).
+   *
+   * 1. Routes code files to the indexer for symbol extraction
+   * 2. Routes extracted symbols through the ingest pipeline
+   * 3. Adds a `source: 'code'` tag to prevent duplicate processing
+   * 4. Checks for existing entries with same file+symbol before writing
+   */
+  async processCode(files: string[]): Promise<WriteResult> {
+    const result: WriteResult = { written: [], indexed: [], failed: [] };
+
+    // 1. Index code files
+    const indexer = new CodeIndexer();
+    const projectRoot = this.detectProjectRoot(files[0]);
+
+    // Run incremental index on the given files
+    const indexResult = await indexer.incrementalIndex(files);
+
+    // 2. Export graph to memory entries
+    const memoryEntries: IndexerMemoryEntry[] = indexer.exportGraphToMemory();
+
+    // 3. Process each memory entry through the pipeline
+    for (const memEntry of memoryEntries) {
+      try {
+        // 4. Check for duplicates (same file + symbol already exists)
+        if (indexer.deduplicateSymbol(memEntry.symbol, memEntry.file)) {
+          continue; // Skip duplicate
+        }
+
+        // Build an ingest event with source: 'code' tag
+        const event: IngestEvent = {
+          id: generateId(),
+          source: 'code',
+          timestamp: now(),
+          payload: memEntry.content,
+          metadata: {
+            tags: memEntry.tags,
+            file: memEntry.file,
+            symbol: memEntry.symbol,
+            symbol_kind: memEntry.symbol_kind,
+            line: memEntry.line,
+            endLine: memEntry.endLine,
+            importance_score: memEntry.importance_score,
+            source: 'code',
+          },
+        };
+
+        const writeResult = await this.process(event);
+        result.written.push(...writeResult.written);
+        result.indexed.push(...writeResult.indexed);
+        result.failed.push(...writeResult.failed);
+      } catch (err) {
+        result.failed.push({
+          item: {
+            target_agent: 'code-index',
+            type: 'code_symbol',
+            content: memEntry.content,
+            confidence: 0.8,
+            source: 'code',
+            tags: ['code'],
+          },
+          error: err instanceof Error ? err.message : String(err),
+        });
+      }
+    }
+
+    return result;
+  }
+
+  /**
+   * Check if a symbol from a file already exists in the local DB.
+   * Delegates to the indexer's deduplicateSymbol method.
+   */
+  deduplicateSymbol(symbol: string, file: string): boolean {
+    try {
+      const indexer = new CodeIndexer();
+      return indexer.deduplicateSymbol(symbol, file);
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Detect project root from a file path (walks up to find .memograph or package.json).
+   */
+  private detectProjectRoot(filePath: string): string {
+    let dir = filePath;
+    try {
+      const stat = fs.statSync(dir);
+      if (!stat.isDirectory()) {
+        dir = path.dirname(dir);
+      }
+    } catch {
+      dir = path.dirname(dir);
+    }
+
+    // Walk up to find a marker
+    let current = dir;
+    for (let i = 0; i < 20; i++) {
+      if (fs.existsSync(path.join(current, '.memograph')) ||
+          fs.existsSync(path.join(current, 'package.json')) ||
+          fs.existsSync(path.join(current, '.git'))) {
+        return current;
+      }
+      const parent = path.dirname(current);
+      if (parent === current) break;
+      current = parent;
+    }
+    return dir;
+  }
+
   // ── 管道步骤 ──────────────────────────────────────────────────
 
   /**
@@ -187,8 +306,10 @@ export class IngestPipeline {
     try {
       // 使用 Agent 范围获取条目
       const targetAgent = event.source === 'code' ? 'project' : 'profile';
-      if (this.config.memoryStore && typeof (this.config.memoryStore as any).getAllByAgent === 'function') {
-        existingEntries = await (this.config.memoryStore as any).getAllByAgent(targetAgent);
+      // SAFETY: memoryStore may be any store implementing LocalDB interface with getAllByAgent
+      const store = this.config.memoryStore as unknown as { getAllByAgent?(agentId: string): Promise<MemoryEntry[]> };
+      if (store && typeof store.getAllByAgent === 'function') {
+        existingEntries = await store.getAllByAgent(targetAgent);
       }
     } catch {
       // 如果失败，跳过去重
@@ -211,10 +332,10 @@ export class IngestPipeline {
     try {
       // 简单的冲突检测: 检查是否有已有条目与输入冲突
       // 委托给 MemoryStore 通过查询进行冲突检测
-      const store = this.config.memoryStore as any;
+      // SAFETY: memoryStore may be any store implementing LocalDB interface with getAllByAgent
+      const store = this.config.memoryStore as unknown as { getAllByAgent?(agentId: string): Promise<MemoryEntry[]> };
       if (typeof store.getAllByAgent === 'function') {
-        const existing = await store.getAllByAgent('profile') as MemoryEntry[];
-        // 检查是否有完全相同的 content 条目
+        const existing = await store.getAllByAgent('profile');
         const conflict = existing.find(
           (e: MemoryEntry) => e.content === event.payload && e.memory_type === 'conflict_flag'
         );

@@ -184,6 +184,15 @@ export class IndexDB {
     stmt.run(symbol);
   }
 
+  /**
+   * Look up symbols by name and file. Used for dedup detection.
+   */
+  getSymbolByNameAndFile(name: string, filePath: string): SymbolRecord[] {
+    if (!this.db) return [];
+    const stmt = this.db.prepare('SELECT * FROM symbols WHERE name = ? AND file = ?');
+    return stmt.all(name, filePath) as SymbolRecord[];
+  }
+
   deleteSymbolsByFile(file: string): void {
     if (!this.db) return;
     this.db.prepare('DELETE FROM symbols WHERE file = ?').run(file);
@@ -285,12 +294,12 @@ export class IndexDB {
   getRoutesByFramework(framework: string): { method: string; path: string; handler: string; file: string; line: number }[] {
     if (!this.db) return [];
     const stmt = this.db.prepare('SELECT method, path, handler, file, line FROM routes WHERE framework = ?');
-    return stmt.all(framework) as any[];
+    return stmt.all(framework) as { method: string; path: string; handler: string; file: string; line: number }[];
   }
 
   getAllRoutes(): { method: string; path: string; handler: string; file: string; line: number; framework: string }[] {
     if (!this.db) return [];
-    return this.db.prepare('SELECT * FROM routes').all() as any[];
+    return this.db.prepare('SELECT * FROM routes').all() as { method: string; path: string; handler: string; file: string; line: number; framework: string }[];
   }
 
   // ── Full-Text Search ──
@@ -316,7 +325,7 @@ export class IndexDB {
         LIMIT ?
       `);
 
-      const rows = stmt.all(ftsQuery, limit) as any[];
+      const rows = stmt.all(ftsQuery, limit) as { name: string; kind: string; file: string; line: number; doc: string | null; rank: number }[];
 
       return rows.map(row => ({
         type: 'symbol' as const,
@@ -335,7 +344,7 @@ export class IndexDB {
         WHERE name LIKE ? OR doc LIKE ?
         LIMIT ?
       `);
-      const rows = stmt.all(likeParam, likeParam, limit) as any[];
+      const rows = stmt.all(likeParam, likeParam, limit) as { name: string; kind: string; file: string; line: number; doc: string | null }[];
       return rows.map(row => ({
         type: 'symbol' as const,
         name: row.name,

@@ -6,6 +6,73 @@ import type {
   IndexOptions, IndexResult, SymbolNode, ImportEdge, CallEdge,
   GraphNode, GraphEdge, SearchResult, FileNode, ImpactChain,
 } from './types.js';
+
+// ── MemoryEntry-like type for the graph→memory bridge ──
+export interface MemoryEntry {
+  agent_id: string;
+  content: string;
+  memory_type: string;
+  source: string;
+  tags: string[];
+  file: string;
+  symbol: string;
+  symbol_kind?: string;
+  line?: number;
+  endLine?: number;
+  importance_score?: number;
+}
+
+/**
+ * Read .memographignore from project root (gitignore format) and merge with defaults.
+ */
+function loadIgnorePatterns(projectRoot: string): string[] {
+  const ignorePath = path.join(projectRoot, '.memographignore');
+  const patterns: string[] = [];
+
+  try {
+    if (!fs.existsSync(ignorePath)) {
+      return patterns;
+    }
+
+    const content = fs.readFileSync(ignorePath, 'utf-8');
+    const lines = content.split(/\r?\n/);
+
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (!trimmed || trimmed.startsWith('#')) continue;
+      if (trimmed.startsWith('\\#')) {
+        patterns.push(trimmed.slice(1));
+        continue;
+      }
+      if (trimmed.startsWith('!')) continue;
+      patterns.push(trimmed);
+    }
+  } catch {
+    // ignore
+  }
+
+  return patterns;
+}
+
+/**
+ * Merge ignore patterns: start with defaults, then load and merge .memographignore.
+ */
+function resolveExcludePatterns(projectRoot: string, options: IndexOptions): string[] {
+  const base = [...(options.excludePatterns ?? DEFAULT_OPTIONS.excludePatterns!)];
+  try {
+    const ignorePatterns = loadIgnorePatterns(projectRoot);
+    for (const p of ignorePatterns) {
+      // Convert gitignore-style to glob-style with **/ prefix
+      const normalized = p.startsWith('**/') ? p : `**/${p}`;
+      if (!base.includes(normalized)) {
+        base.push(normalized);
+      }
+    }
+  } catch {
+    // If ignore file load fails, just use defaults
+  }
+  return base;
+}
 import { ExtractorRegistry } from './extraction/extractor-registry.js';
 import { CodeGraph } from './graph/code-graph.js';
 import { IndexDB } from './db/index-db.js';
@@ -18,7 +85,7 @@ import { FileWatcher } from './watcher/file-watcher.js';
  */
 const DEFAULT_OPTIONS: IndexOptions = {
   includePatterns: ['**/*.{ts,tsx,js,jsx,mjs,cjs,py,go,rs,java,cs,php,rb,c,h,cpp,hpp,cc,cxx,swift,kt,kts,dart,lua,svelte,vue,yaml,yml,json,md,mdx,css,scss,less,html,sql,sh,bash,zsh,Dockerfile}'],
-  excludePatterns: ['**/node_modules/**', '**/.git/**', '**/dist/**', '**/build/**', '**/.next/**', '**/.nuxt/**', '**/target/**', '**/vendor/**', '**/.cache/**', '**/coverage/**'],
+  excludePatterns: ['**/node_modules/**', '**/.git/**', '**/dist/**', '**/build/**', '**/coverage/**', '**/.next/**', '**/.memograph/**', '**/.test-workspace/**'],
   maxFileSize: 5 * 1024 * 1024, // 5MB
 };
 
@@ -492,7 +559,7 @@ export class CodeIndexer {
    */
   private collectFiles(root: string, options: IndexOptions): string[] {
     const include = options.includePatterns || [];
-    const exclude = options.excludePatterns || [];
+    const exclude = resolveExcludePatterns(root, options);
     const maxSize = options.maxFileSize || DEFAULT_OPTIONS.maxFileSize!;
     const languages = options.languages;
     const files: string[] = [];
@@ -752,6 +819,84 @@ export class CodeIndexer {
     if (this.watcher) {
       this.watcher.unwatch();
       this.watcher = null;
+    }
+  }
+
+  /**
+   * Convert the in-memory code graph to MemoryEntry[] for the ingest pipeline.
+   * Each node becomes one MemoryEntry with code_symbol type;
+   * each edge becomes a code_dependency entry.
+   */
+  exportGraphToMemory(): MemoryEntry[] {
+    const graph = this.getGraph();
+    const nodes = graph.getAllNodes();
+    const edges = graph.getAllEdges();
+    const entries: MemoryEntry[] = [];
+    const seenKeys = new Set<string>();
+
+    for (const node of nodes) {
+      const key = `symbol:${node.file}:${node.name}`;
+      if (seenKeys.has(key)) continue;
+      seenKeys.add(key);
+
+      const content = node.doc
+        ? `${node.kind} ${node.name} in ${node.file}: ${node.doc}`
+        : `${node.kind} ${node.name} in ${node.file}`;
+
+      entries.push({
+        agent_id: 'code-index',
+        content,
+        memory_type: 'code_symbol',
+        source: 'code',
+        tags: ['code', node.language, node.kind],
+        file: node.file,
+        symbol: node.name,
+        symbol_kind: node.kind,
+        line: node.line,
+        endLine: node.endLine,
+        importance_score: node.complexity > 5 ? 0.8 : 0.5,
+      });
+    }
+
+    for (const edge of edges) {
+      const fromNode = graph.getNode(edge.from);
+      const toNode = graph.getNode(edge.to);
+      if (!fromNode || !toNode) continue;
+
+      const key = `dep:${edge.from}:${edge.to}:${edge.type}`;
+      if (seenKeys.has(key)) continue;
+      seenKeys.add(key);
+
+      entries.push({
+        agent_id: 'code-index',
+        content: `${edge.type}: ${fromNode.name} (${fromNode.file}) → ${toNode.name} (${toNode.file})`,
+        memory_type: 'code_dependency',
+        source: 'code',
+        tags: ['code', 'dependency', edge.type],
+        file: fromNode.file,
+        symbol: `${fromNode.name}→${toNode.name}`,
+        symbol_kind: edge.type,
+        line: fromNode.line,
+        endLine: toNode.endLine,
+        importance_score: 0.5,
+      });
+    }
+
+    return entries;
+  }
+
+  /**
+   * Check if a symbol from a file already exists in local DB.
+   */
+  deduplicateSymbol(symbol: string, filePath: string): boolean {
+    if (!this.dbPath) return false;
+    this.db.initialize(this.dbPath);
+
+    try {
+      const existingSymbols = this.db.getSymbolByNameAndFile(symbol, filePath);
+      return existingSymbols.length > 0;
+    } catch {
+      return false;
     }
   }
 

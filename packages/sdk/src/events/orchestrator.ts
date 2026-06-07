@@ -40,7 +40,7 @@ export class PipelineOrchestrator {
   async init(): Promise<void> {
     if (this.initialized) return;
 
-    const { loadConfig, getCacheDir } = await import('@memograph/sdk');
+    const { loadConfig, getCacheDir } = await import('../config.js');
     const { LocalDB: PersistLocalDB, XiamiClient, SyncManager } = await import('@memograph/persist');
     const { MemoryStore } = await import('@memograph/memory');
     const { IngestPipeline } = await import('@memograph/ingest');
@@ -62,11 +62,12 @@ export class PipelineOrchestrator {
       provider: 'openai',
       apiKey: process.env.OPENAI_API_KEY || process.env.XIAMI_LLM_KEY || '',
     });
+    // SAFETY: IngestPipeline accepts Partial<IngestPipelineConfig>, and all required fields are provided
     this.pipeline = new IngestPipeline({
       embedder: this.embedder,
       llm: this.llmClient,
       memoryStore: this.memoryStore,
-    } as any);
+    });
 
     this.initialized = true;
   }
@@ -97,7 +98,7 @@ export class PipelineOrchestrator {
           },
         };
 
-        const result = await this.pipeline.process(fileEvent as any);
+        const result = await this.pipeline.process(fileEvent);
         indexed.push(...result.written);
       } catch {
         // Skip files that fail to read/process
@@ -135,7 +136,8 @@ export class PipelineOrchestrator {
     try {
       const { CognitivePipeline } = await import('@memograph/cognitive');
       const cognitive = new CognitivePipeline();
-      await cognitive.run({ rootPath: this.projectDir } as any);
+      // SAFETY: CognitivePipeline.run accepts a flexible options object with rootPath
+      await cognitive.run({ rootPath: this.projectDir });
     } catch {
       // cognitive package may not be fully implemented yet
     }
@@ -219,7 +221,8 @@ export class PipelineOrchestrator {
     try {
       const { CognitivePipeline } = await import('@memograph/cognitive');
       const cognitive = new CognitivePipeline();
-      await cognitive.run({ rootPath: projectDir } as any);
+      // SAFETY: CognitivePipeline.run accepts a flexible options object with rootPath
+      await cognitive.run({ rootPath: projectDir });
     } catch {
       // cognitive package may not be fully implemented yet
     }
@@ -300,7 +303,7 @@ export class PipelineOrchestrator {
           },
         };
 
-        const result = await this.pipeline.process(fileEvent as any);
+        const result = await this.pipeline.process(fileEvent);
         entriesWritten += result.written.length;
       } catch {
         // skip

@@ -145,7 +145,12 @@ export class RecallEngine {
       const timeDecay = this.timeDecay(entry, daysSinceAccess);
 
       // 原始分 * 时间衰减 + 访问提升（限制在 0-1 之间）
-      const finalScore = Math.min(baseScore * timeDecay + accessBoost, 1.0);
+      let finalScore = Math.min(baseScore * timeDecay + accessBoost, 1.0);
+
+      // 重要性分数提升：高重要性条目推高排名
+      // 公式：boostedScore = rawScore * (0.7 + 0.3 * importance_score)
+      const importanceBoost = 0.7 + 0.3 * (entry.metadata.importance_score ?? 0.5);
+      finalScore = finalScore * importanceBoost;
 
       return { ...c, score: finalScore };
     });
@@ -230,6 +235,8 @@ export class RecallEngine {
     }
     // 访问活跃加分
     score += Math.min(entry.lifecycle.access_count / 50, 0.1);
+    // 重要性加分
+    score += (entry.metadata.importance_score ?? 0.5) * 0.1;
 
     return Math.min(score, 1.0);
   }

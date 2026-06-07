@@ -1,0 +1,1 @@
+{"root":["./src/index.ts","./src/agents/architecture-analyzer.ts","./src/agents/article-analyzer.ts","./src/agents/domain-analyzer.ts","./src/agents/file-analyzer.ts","./src/agents/graph-reviewer.ts","./src/agents/project-scanner.ts","./src/agents/tour-builder.ts","./src/languages/registry.ts","./src/pipeline/pipeline.ts","./src/pipeline/types.ts"],"version":"5.9.3"}

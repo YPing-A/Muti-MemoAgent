@@ -39,7 +39,8 @@ export async function evolveCommand(options: EvolveOptionsCLI): Promise<void> {
       api_base: config.xiami.api_base,
       platform_key: config.xiami.platform_key,
     });
-    const memoryStore = new MemoryStore(xiamiClient as any, db as any);
+    // SAFETY: XiamiClientImpl and LocalDBImpl need casting to match memory's interfaces
+    const memoryStore = new MemoryStore(xiamiClient as unknown as import('@memograph/memory').XiamiClient, db as unknown as import('@memograph/memory').LocalDB);
 
     const agents = Object.keys(config.xiami.agents);
     if (agents.length === 0) {

@@ -106,18 +106,19 @@ export class MemographSDK {
         api_base: this.config.xiami.api_base,
         platform_key: xiamiKey,
       });
-      // Use type assertion — persist XiamiClient uses different method names than memory's XiamiClient interface
+      // SAFETY: persist XiamiClient uses different method names than memory's XiamiClient interface — cast via unknown
       this.xiamiClient = rawClient as unknown as XiamiClient;
 
       let xiamiConnected = false;
       if (xiamiKey) {
         try {
           // 简单的连通性测试 — use the memory interface method
+          // SAFETY: XiamiClientImpl may not match XiamiClient interface exactly; cast for connectivity test
           await (this.xiamiClient as XiamiClient).write({
             agent_id: '__test__',
             content: 'connectivity test',
             memory_type: 'fact',
-          } as any);
+          });
           xiamiConnected = true;
           console.log('       ✅ Xiami connected');
         } catch (err) {
@@ -217,6 +218,7 @@ export class MemographSDK {
           api_base: this.config.xiami.api_base,
           platform_key: this.config.xiami.platform_key,
         });
+        // SAFETY: persist XiamiClient uses different method names than memory's XiamiClient interface
         this.xiamiClient = rawClient as unknown as XiamiClient;
         connected = true;
       } catch {
@@ -251,9 +253,9 @@ export class MemographSDK {
           localIndex.size_bytes = stats.size;
           // 使用 sqlite 查询条目数 — use dynamic import with type assertion
           const {LocalDB: SQLiteDB} = await import('@memograph/persist');
-          const db = new SQLiteDB();
-          (db as any).initialize(dbPath);
-          const result = (db as any).getStats();
+          const db = new SQLiteDB() as unknown as { initialize(p: string): void; getStats(): { count: number } };
+          db.initialize(dbPath);
+          const result = db.getStats();
           localIndex.entry_count = result.count ?? 0;
         } catch {
           // fallback
@@ -407,11 +409,11 @@ export class MemographSDK {
     const dbPath = path.join(cacheDir, 'memograph.db');
     // persist's LocalDB uses initialize(dbPath) + insert/getById/deleteById/search/getStats
     // memory's LocalDB interface expects upsert/get/getAllByAgent/delete/ftsSearch/vectorSearch/count
-    // Cast to any since the APIs have not been aligned yet
+    // SAFETY: persist's LocalDB APIs have not been aligned with memory's LocalDB interface
     const {LocalDB: SQLiteDB} = await import('@memograph/persist');
-    const db = new SQLiteDB() as any;
-    db.initialize(dbPath);
-    return db as LocalDB;
+    const db = new SQLiteDB() as unknown as LocalDB;
+    db.initialize!(dbPath);
+    return db;
   }
 
   private getDirSize(dirPath: string): number {

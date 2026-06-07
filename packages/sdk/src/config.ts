@@ -125,3 +125,46 @@ export function ensureConfigDir(): void {
     }
   }
 }
+
+/**
+ * 从项目根目录加载 .memographignore 文件（gitignore 格式）
+ * 并合并默认排除模式。
+ *
+ * @param projectDir - 项目根目录
+ * @returns 排除模式列表
+ */
+export function loadIgnorePatterns(projectDir: string): string[] {
+  const ignorePath = path.join(projectDir, '.memographignore');
+  const patterns: string[] = [];
+
+  try {
+    if (!fs.existsSync(ignorePath)) {
+      return patterns;
+    }
+
+    const content = fs.readFileSync(ignorePath, 'utf-8');
+    const lines = content.split(/\r?\n/);
+
+    for (const line of lines) {
+      const trimmed = line.trim();
+
+      // 跳过空行和注释
+      if (!trimmed || trimmed.startsWith('#')) continue;
+
+      // 处理转义注释前缀（以 \# 开头）
+      if (trimmed.startsWith('\\#')) {
+        patterns.push(trimmed.slice(1));
+        continue;
+      }
+
+      // 忽略 negate 模式（! 开头的行），因为我们的 glob 匹配不支持否定
+      if (trimmed.startsWith('!')) continue;
+
+      patterns.push(trimmed);
+    }
+  } catch {
+    // 文件不可读时静默处理
+  }
+
+  return patterns;
+}

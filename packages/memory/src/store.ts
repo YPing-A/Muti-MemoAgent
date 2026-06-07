@@ -8,73 +8,27 @@ import type {
   WriteResult,
   XiamiWriteInput,
   XiamiSearchInput,
+  IStorageBackend,
+  ILocalDB,
 } from '@memograph/core';
 import { chunkArray } from '@memograph/core';
 import { createEntry, updateEntry } from './entry.js';
-
-// ═══════════════════════════════════════════════════════════════
-// 上游接口类型
-// ═══════════════════════════════════════════════════════════════
-
-export interface XiamiClient {
-  /** 向 Xiami 写入单条记忆 */
-  write(input: XiamiWriteInput): Promise<{ id: string }>;
-  /** 批量写入 */
-  writeBatch(inputs: XiamiWriteInput[]): Promise<{ ids: string[] }>;
-  /** 搜索 Xiami 记忆 */
-  search(input: XiamiSearchInput): Promise<MemoryEntry[]>;
-  /** 跨 Agent 搜索 */
-  searchCrossAgent(query: string): Promise<import('@memograph/core').SearchResult[]>;
-  /** Agent 信息列表 */
-  listAgents(): Promise<import('@memograph/core').XiamiAgentInfo[]>;
-  /** Agent 统计 */
-  getStats(agentId: string): Promise<Record<string, unknown>>;
-  /** 运行遗忘周期 */
-  runForgetting(agentId: string): Promise<void>;
-  /** 创建 Agent */
-  createAgent(name: string, description?: string): Promise<import('@memograph/core').XiamiAgentInfo>;
-  /** 同步知识库 */
-  syncKnowledgeBase(entries: Array<{ content: string; type: import('@memograph/core').MemoryType }>): Promise<void>;
-}
-
-export interface LocalDB {
-  /** 初始化数据库 (传入路径) */
-  initialize?(dbPath: string): void;
-  /** 插入一条记忆 */
-  insert(entry: MemoryEntry): void;
-  /** 按 ID 读取 */
-  getById(id: string): MemoryEntry | null;
-  /** 按 agent_id 读取所有 */
-  getAllByAgent(agentId: string): MemoryEntry[];
-  /** 删除 */
-  deleteById(id: string): void;
-  /** FTS5 全文搜索 */
-  search(query: string, limit?: number): MemoryEntry[];
-  /** 获取索引时间之后的条目 */
-  getEntriesIndexedSince(since: number): MemoryEntry[];
-  /** 所有记录数 */
-  count(): number;
-  /** 数据库统计 */
-  getStats(): { count: number };
-  /** 清理 */
-  close?(): void;
-}
 
 // ═══════════════════════════════════════════════════════════════
 // MemoryStore
 // ═══════════════════════════════════════════════════════════════
 
 export class MemoryStore {
-  private client: XiamiClient;
-  private db: LocalDB;
+  private client: IStorageBackend;
+  private db: ILocalDB;
 
-  constructor(client: XiamiClient, db: LocalDB) {
+  constructor(client: IStorageBackend, db: ILocalDB) {
     this.client = client;
     this.db = db;
   }
 
   // ── 单条写入流水线 ──
-  async write(item: ClassifiedItem): Promise<MemoryEntry> {
+  async write(item: ClassifiedItem): Promise<{ entry: MemoryEntry; cloud_synced: boolean; error?: string }> {
     const entry = createEntry({
       agent_id: item.target_agent,
       content: item.content,
@@ -113,11 +67,12 @@ export class MemoryStore {
       });
       updated.metadata.tags.push('xiami_synced');
       this.db.insert(updated);
-      return updated;
+      return { entry: updated, cloud_synced: true };
     } catch (err) {
-      // Xiami 推送失败时也返回本地条目
-      console.error(`[MemoryStore] Xiami write failed for ${entry.id}:`, err);
-      return entry;
+      console.error(`[MemoryStore] Xiami write failed: ${err.message}`);
+      // Still write to local, but mark as sync-pending
+      entry.metadata.tags.push('sync-pending');
+      return { entry, cloud_synced: false, error: err.message };
     }
   }
 

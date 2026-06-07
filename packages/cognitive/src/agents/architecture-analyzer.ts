@@ -370,7 +370,8 @@ export class ArchitectureAnalyzer {
     for (const pattern of ARCHITECTURE_PATTERNS) {
       let matches = true;
       for (const [key, required] of Object.entries(pattern.conditions)) {
-        if (required && !(conditions as any)[key]) {
+        // SAFETY: conditions is a Record<string, unknown> and we check each key dynamically
+        if (required && !(conditions as Record<string, unknown>)[key]) {
           matches = false;
           break;
         }

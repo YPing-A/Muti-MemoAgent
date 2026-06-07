@@ -6,7 +6,7 @@ import {
   EventBus,
   FileListener,
   PipelineOrchestrator,
-} from '@memograph/events';
+} from '@memograph/sdk';
 import {loadConfig, getCacheDir} from '@memograph/sdk';
 import * as path from 'node:path';
 import * as fs from 'node:fs';
