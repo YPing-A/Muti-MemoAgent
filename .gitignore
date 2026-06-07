@@ -1,0 +1,7 @@
+node_modules/
+dist/
+.memograph/
+*.db
+*.db-journal
+.env
+.env.local

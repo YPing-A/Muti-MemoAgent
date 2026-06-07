@@ -1,0 +1,247 @@
+// ─────────────────────────────────────────────────────────────────
+// @memograph/persist — Xiami REST API Client
+// ─────────────────────────────────────────────────────────────────
+
+import type {
+  MemoryEntry,
+  XiamiWriteInput,
+  XiamiSearchInput,
+  XiamiAgentInfo,
+  SearchResult,
+  MemoryType,
+} from '@memograph/core';
+
+// ─────────────────────────────────────────────────────────────────
+// Types
+// ─────────────────────────────────────────────────────────────────
+
+export interface XiamiClientConfig {
+  api_base: string;
+  platform_key: string;
+}
+
+export interface XiamiWriteResponse {
+  id: string;
+}
+
+export interface XiamiBatchWriteResponse {
+  ids: string[];
+}
+
+export interface XiamiAgentCreateRequest {
+  name: string;
+  description?: string;
+}
+
+// ─────────────────────────────────────────────────────────────────
+// Error
+// ─────────────────────────────────────────────────────────────────
+
+export class XiamiApiError extends Error {
+  constructor(
+    public readonly status: number,
+    public readonly statusText: string,
+    public readonly body?: unknown,
+  ) {
+    super(`Xiami API error ${status} ${statusText}`);
+    this.name = 'XiamiApiError';
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────
+// Client
+// ─────────────────────────────────────────────────────────────────
+
+const MAX_RETRIES = 3;
+const INITIAL_BACKOFF_MS = 1_000;
+const MAX_BATCH_SIZE = 100;
+
+export class XiamiClient {
+  private readonly apiBase: string;
+  private readonly platformKey: string;
+
+  constructor(config: XiamiClientConfig) {
+    this.apiBase = config.api_base.replace(/\/+$/, '');
+    this.platformKey = config.platform_key;
+  }
+
+  // ── Private helpers ──────────────────────────────────────────
+
+  /**
+   * Execute an authenticated HTTP request against the Xiami API
+   * with automatic retry on 429 (rate-limit) responses.
+   */
+  private async request<T = unknown>(
+    method: string,
+    path: string,
+    body?: unknown,
+    attempt = 0,
+  ): Promise<T> {
+    const url = `${this.apiBase}${path}`;
+
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      'X-Platform-Key': this.platformKey,
+      'User-Agent': '@memograph/persist/0.1.0',
+    };
+
+    const res = await fetch(url, {
+      method,
+      headers,
+      body: body !== undefined ? JSON.stringify(body) : undefined,
+    });
+
+    // ── Rate-limit: exponential backoff ──────────────────────
+    if (res.status === 429 && attempt < MAX_RETRIES) {
+      const retryAfter = res.headers.get('Retry-After');
+      const delayMs = retryAfter
+        ? parseInt(retryAfter, 10) * 1_000
+        : INITIAL_BACKOFF_MS * Math.pow(2, attempt);
+
+      await new Promise((resolve) => setTimeout(resolve, delayMs));
+      return this.request<T>(method, path, body, attempt + 1);
+    }
+
+    // ── Success (2xx) ────────────────────────────────────────
+    if (res.ok) {
+      // 204 No Content
+      if (res.status === 204) {
+        return undefined as T;
+      }
+      return (await res.json()) as T;
+    }
+
+    // ── Error ──────────────────────────────────────────────────
+    let errorBody: unknown;
+    try {
+      errorBody = await res.json();
+    } catch {
+      try {
+        errorBody = await res.text();
+      } catch {
+        errorBody = null;
+      }
+    }
+
+    throw new XiamiApiError(res.status, res.statusText, errorBody);
+  }
+
+  // ── Memory: write ─────────────────────────────────────────
+
+  /**
+   * Write a single memory entry to the Xiami cloud.
+   */
+  async write(input: XiamiWriteInput): Promise<XiamiWriteResponse> {
+    return this.request<XiamiWriteResponse>('POST', '/memory/write', input);
+  }
+
+  /**
+   * Write up to 100 memory entries in a single batch call.
+   * Throws if the batch exceeds the maximum size.
+   */
+  async writeBatch(inputs: XiamiWriteInput[]): Promise<XiamiBatchWriteResponse> {
+    if (inputs.length > MAX_BATCH_SIZE) {
+      throw new Error(
+        `Batch size ${inputs.length} exceeds maximum of ${MAX_BATCH_SIZE}`,
+      );
+    }
+    return this.request<XiamiBatchWriteResponse>(
+      'POST',
+      '/memory/write-batch',
+      inputs,
+    );
+  }
+
+  // ── Memory: search ───────────────────────────────────────
+
+  /**
+   * Search memory entries. Supports text, embedding, and
+   * filter-based searches via XiamiSearchInput.
+   */
+  async search(input: XiamiSearchInput): Promise<MemoryEntry[]> {
+    return this.request<MemoryEntry[]>('POST', '/search', input);
+  }
+
+  /**
+   * Cross-agent search — queries memory across all agents
+   * registered under this platform key.
+   */
+  async searchCrossAgent(query: string): Promise<SearchResult[]> {
+    return this.request<SearchResult[]>('POST', '/search/cross-agent', {
+      query,
+    });
+  }
+
+  // ── Agent management ─────────────────────────────────────
+
+  /**
+   * Create a new agent on the Xiami platform.
+   * Returns the agent info including its API token.
+   */
+  async createAgent(
+    name: string,
+    description?: string,
+  ): Promise<XiamiAgentInfo> {
+    const body: XiamiAgentCreateRequest = { name };
+    if (description !== undefined) {
+      body.description = description;
+    }
+    return this.request<XiamiAgentInfo>('POST', '/agents/json', body);
+  }
+
+  /**
+   * List all agents associated with this platform key.
+   */
+  async listAgents(): Promise<XiamiAgentInfo[]> {
+    return this.request<XiamiAgentInfo[]>(
+      'GET',
+      '/third-party/memory/integration-manifest',
+    );
+  }
+
+  // ── Knowledge base ───────────────────────────────────────
+
+  /**
+   * Synchronize a batch of text entries into the agent's
+   * knowledge base for grounding LLM responses.
+   */
+  async syncKnowledgeBase(
+    entries: Array<{ content: string; type: MemoryType }>,
+  ): Promise<void> {
+    await this.request<void>(
+      'POST',
+      '/ai/knowledge-base/sync-text',
+      { entries },
+    );
+  }
+
+  // ── Forgetting ───────────────────────────────────────────
+
+  /**
+   * Trigger a forgetting (memory consolidation / decay) cycle
+   * for the specified agent. The Xiami server evaluates each
+   * entry's fitness and applies retention, consolidation, or
+   * decay accordingly.
+   */
+  async runForgetting(agentId: string): Promise<void> {
+    await this.request<void>('POST', '/memory/forgetting/dream', {
+      agent_id: agentId,
+    });
+  }
+
+  // ── Statistics ───────────────────────────────────────────
+
+  /**
+   * Retrieve memory statistics for the given agent.
+   * Returns a flat key-value map — exact keys are server-defined.
+   */
+  async getStats(
+    agentId: string,
+  ): Promise<Record<string, unknown>> {
+    return this.request<Record<string, unknown>>(
+      'POST',
+      '/ai/memory/stats',
+      { agent_id: agentId },
+    );
+  }
+}

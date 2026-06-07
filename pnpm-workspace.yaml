@@ -1,0 +1,8 @@
+packages:
+  - 'packages/*'
+  - 'cli'
+  - 'mcp-server'
+  - 'dashboard'
+
+onlyBuiltDependencies:
+  - better-sqlite3

@@ -1,0 +1,43 @@
+{
+  "name": "@memograph/cli",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Memograph CLI — manage memory agents from the terminal",
+  "type": "module",
+  "bin": {
+    "memograph": "./dist/index.js"
+  },
+  "files": [
+    "dist",
+    "src"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "build:watch": "tsc --watch",
+    "clean": "rimraf dist",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@memograph/core": "workspace:*",
+    "@memograph/memory": "workspace:*",
+    "@memograph/persist": "workspace:*",
+    "@memograph/ingest": "workspace:*",
+    "@memograph/indexer": "workspace:*",
+    "@memograph/cognitive": "workspace:*",
+    "@memograph/events": "workspace:*",
+    "@memograph/sdk": "workspace:*",
+    "commander": "^12.0.0",
+    "chalk": "^5.3.0",
+    "inquirer": "^9.2.0",
+    "ora": "^8.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.0",
+    "rimraf": "^5.0.0",
+    "vitest": "^1.6.0",
+    "@types/node": "^20.0.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

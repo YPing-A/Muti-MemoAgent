@@ -1,0 +1,1 @@
+export class Database { async connect() {} async query(sql) { return [{id:1}]; } }

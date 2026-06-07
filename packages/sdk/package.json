@@ -1,0 +1,40 @@
+{
+  "name": "@memograph/sdk",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Memograph SDK — install, init, connect, and manage memory agents",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist",
+    "src"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "build:watch": "tsc --watch",
+    "clean": "rimraf dist",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@memograph/core": "workspace:*",
+    "@memograph/memory": "workspace:*",
+    "@memograph/persist": "workspace:*",
+    "@memograph/ingest": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.0",
+    "rimraf": "^5.0.0",
+    "vitest": "^1.6.0",
+    "@types/node": "^20.0.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

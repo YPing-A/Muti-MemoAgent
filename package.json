@@ -1,0 +1,15 @@
+{
+  "name": "memograph",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Multi-MemoAgent — 多智能体记忆体自进化网络",
+  "license": "SEE LICENSE IN LICENSE",
+  "author": "Multi-MemoAgent Contributors",
+  "scripts": {
+    "build": "pnpm -r run build",
+    "test": "pnpm -r run test",
+    "lint": "pnpm -r run lint",
+    "clean": "pnpm -r run clean",
+    "dev": "pnpm -r --parallel run dev"
+  }
+}

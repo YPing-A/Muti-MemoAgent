@@ -1,0 +1,1 @@
+export class AuthService { initialize() {} authenticate() { return 'token'; } login(creds) { return 'session'; } }
