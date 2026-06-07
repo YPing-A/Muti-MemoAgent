@@ -1,83 +1,82 @@
 # Muti-MemoAgent 🧠
 
-> 多智能体记忆体自进化网络 — 让记忆学会自己成长。
->
 > Multi-Agent Memory Self-Evolution Network — memories that grow on their own.
 
 [![TypeScript](https://img.shields.io/badge/Language-TypeScript-blue)]()
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen)]()
 
----
-
-## What is it? / 这是什么？
-
-**EN:** Muti-MemoAgent is a multi-agent memory system. It automatically indexes your code, extracts your preferences from conversations, discovers hidden relationships between projects, and self-evolves by splitting, merging and consolidating memories. Think of it as a **self-growing brain for your AI agents**.
-
-**ZH:** Muti-MemoAgent 是一个多智能体记忆系统。自动索引代码、从对话中提取画像、发现项目间的隐藏关联、并自我进化（拆分/合并/巩固记忆）。**就是给 AI Agent 装一个会自己长大的人。**
+[中文文档 →](./README_zh.md)
 
 ---
 
-## Why? / 为什么需要？
+## What is it?
 
-| Problem / 痛点 | Solution / 解法 |
-|---|---|
-| AI Agent 每次都重新理解代码 | CodeGraph 引擎预索引 → 符号 + 调用链 + FTS5 搜索 |
-| 不同项目的记忆互不相通 | Cross-Agent 图谱 → 自动发现跨项目关联 |
-| 记忆越存越多，从不清理 | 遗忘引擎 → 时间衰减 + 重要性评分 + 梦境巩固 |
-| Agent 之间知识孤立 | 自进化网络 → 拆分/合并/迁移/竞争 |
-| 新成员入职看不懂项目 | 认知流水线 → 架构分层 + 引导式导览 |
+Muti-MemoAgent is a multi-agent memory system. It automatically indexes your code, extracts your preferences from conversations, discovers hidden relationships between projects, and self-evolves by splitting, merging and consolidating memories.
+
+**Think of it as a self-growing brain for your AI agents.**
 
 ---
 
-## Core Features / 核心功能
+## Why?
 
-### 🧠 Memory Intelligence / 记忆智能
+| Problem | Solution |
+|---|---|
+| AI agents re-understand code from scratch every time | Pre-indexed code graph → symbols + call chain + FTS5 |
+| Memories across projects are disconnected | Cross-Agent graph → auto-discover hidden relations |
+| Memories pile up, never cleaned | Forgetting engine → time decay + importance + consolidation |
+| Agent knowledge is siloed | Self-evolution → split / merge / migrate / compete |
+| New team members can't navigate the codebase | Cognitive pipeline → layers + guided tours |
+
+---
+
+## Core Features
+
+### 🧠 Memory Intelligence
 
 | Feature | Description |
 |---|---|
-| **Auto-Ingest 自动接入** | 5-stage pipeline: filter → dedup → conflict check → route → write |
-| **User Profile 用户画像** | Auto-extract facts/preferences/procedures from conversations |
-| **Code Indexing 代码索引** | 20+ languages, symbol extraction, call graph, FTS5 search |
-| **Forgetting Engine 遗忘引擎** | Time-decay + importance scoring + dream consolidation |
-| **Conflict Detection 冲突检测** | "likes TS" vs "dislikes TS" → flagged for resolution |
+| **Auto-Ingest** | 5-stage pipeline: filter → dedup → conflict → route → write |
+| **User Profile** | Auto-extract facts, preferences, procedures from conversations |
+| **Code Indexing** | 20+ languages, symbol extraction, call graph, FTS5 search |
+| **Forgetting Engine** | Time-decay + importance scoring + dream consolidation |
+| **Conflict Detection** | "likes TS" vs "dislikes TS" → flagged for resolution |
 
-### 🤝 Multi-Agent Collaboration / 多智能体协作
-
-| Feature | Description |
-|---|---|
-| **Cross-Agent Graph 跨Agent图谱** | Weighted directed graph connecting all memory agents |
-| **Relation Discovery 关系发现** | NER + LLM inference + multi-hop reasoning (A→B→C → A→C) |
-| **Collaborative Search 协作搜索** | One query searches primary + related + profile + MCP registry |
-
-### 🌱 Self-Evolution / 自进化
+### 🤝 Multi-Agent Collaboration
 
 | Feature | Description |
 |---|---|
-| **Fitness Evaluation 适应度评估** | 4-dimension scoring: quality + utility + activity + collaboration |
-| **5 Mutation Ops 5种变异** | Split / Merge / Reorganize / Consolidate / Migrate |
-| **Competition 竞争选择** | Agents covering same domain compete → weakest archived |
+| **Cross-Agent Graph** | Weighted directed graph connecting all memory agents |
+| **Relation Discovery** | NER + LLM inference + multi-hop reasoning (A→B→C ⇒ A→C) |
+| **Collaborative Search** | One query searches primary + related + profile + MCP registry |
 
-### 🧪 Cognitive Analysis / 认知分析
+### 🌱 Self-Evolution
+
+| Feature | Description |
+|---|---|
+| **Fitness Evaluation** | 4-dimension: quality + utility + activity + collaboration |
+| **5 Mutation Operations** | Split / Merge / Reorganize / Consolidate / Migrate |
+| **Competition** | Same-domain agents compete → weakest archived |
+
+### 🧪 Cognitive Analysis
 
 | Feature | Description |
 |---|---|
 | **7-Agent Pipeline** | Scanner → FileAnalyzer → Architecture → Tour → Reviewer → Domain → Article |
-| **Architecture Layers** | 7 layers auto-detected: API / Service / Data / UI / Utility / Config / Test |
-| **Guided Tours 引导导览** | 3 audiences: Junior / PM / Power User |
+| **Architecture Layers** | 7 layers: API / Service / Data / UI / Utility / Config / Test |
+| **Guided Tours** | 3 audiences: Junior / PM / Power User |
 | **Domain Modeling** | 14 predefined domains + business flow extraction |
 
 ---
 
-## Quick Start / 快速开始
+## Quick Start
 
-### For AI Agents / 给 AI Agent 用
+### For AI Agents
 
 ```bash
 # 1. First-time setup (opens browser for registration)
 npx @memograph/cli onboard
 
 # 2. Initialize a project
-cd your-project
 memograph init --xiami-key xiami_sk_xxx
 
 # 3. Index & analyze
@@ -88,66 +87,59 @@ memograph search "authentication flow"
 
 # 5. Write a memory
 memograph memo "user prefers pnpm over npm" --type preference
-
-# 6. Auto-sync on every git commit (hooks installed automatically)
-git commit -m "add feature"
 ```
 
-### For Humans / 给人用
+### For Humans
 
 ```bash
-# 安装 / Install
+# Install
 npm install -g @memograph/cli
 
-# 初始化 / Initialize
-cd my-project
+# Initialize (auto-creates: profile / mcp-registry / project agents)
 memograph init --xiami-key xiami_sk_xxx
-# → 自动创建: profile / mcp-registry / project-{name} 三个记忆体
 
-# 索引代码 / Index code
-memograph index          # 增量索引
-memograph index --full   # 全量重建
+# Index code
+memograph index              # Incremental
+memograph index --full       # Full rebuild
 
-# 分析架构 / Analyze
-memograph analyze              # 认知流水线
-memograph analyze --domain     # + 业务领域提取
-memograph analyze --language zh # 中文输出
+# Analyze architecture
+memograph analyze            # Cognitive pipeline
+memograph analyze --domain   # + Domain extraction
+memograph analyze --language zh  # Chinese output
 
-# 搜索 / Search
-memograph search "支付流程"
+# Search
+memograph search "payment flow"
 memograph search --mode symbol "authenticateUser"
 memograph search --mode impact "src/auth/login.ts"
 
-# 写记忆 / Write memory
-memograph memo "部署流程: build → docker → k8s"
-memograph memo --type preference "用户喜欢 tailwind"
+# Write memory
+memograph memo "Deploy: build → docker → k8s"
+memograph memo --type preference "User prefers tailwind"
 
-# 监控模式 / Watch mode
-memograph watch           # 文件保存即自动索引
+# Watch mode (auto-index on save)
+memograph watch
 
-# 进化 / Evolve
-memograph evolve           # 自动拆分/合并/巩固 Agent
-memograph forget            # 清理过期记忆
+# Evolve & maintain
+memograph evolve             # Auto split/merge/consolidate
+memograph forget             # Clean expired memories
+memograph check              # Check Xiami quota
 
-# 仪表盘 / Dashboard
-memograph dashboard        # http://localhost:3456
-
-# 检查配额 / Check quota
-memograph check             # Xiami 余额查询
+# Dashboard
+memograph dashboard          # http://localhost:3456
 ```
 
-### All Commands / 全部命令
+### All Commands
 
 ```
 init          Initialize project & create memory agents
-onboard       First-time setup: register → get key → configure
+onboard       First-time setup wizard
 index         Index codebase into memory
 analyze       Run cognitive analysis pipeline
 search        Search across all memory agents
 memo          Manually write a memory entry
 watch         Auto-index on file changes
-evolve        Run evolution cycle (split/merge/consolidate)
-forget        Run forgetting cycle (decay & prune)
+evolve        Run evolution cycle
+forget        Run forgetting cycle
 status        Show connection & agent status
 check         Check Xiami quota & balance
 dashboard     Start web dashboard
@@ -156,13 +148,13 @@ trigger       Manually trigger events
 
 ---
 
-## Architecture / 架构
+## Architecture
 
 ```
-Agent Query "支付流程"
+Agent Query "payment flow"
   │
   ├─ L1: Local SQLite (0.5ms) ─── FTS5 + Vector + Symbol index
-  │   → Current project code matches (70% weight)
+  │   → Current project matches (70% weight)
   │
   ├─ L2: Xiami Cloud (200ms) ─── Neo4j Graph + RAG
   │   → Cross-project similarities (20%)
@@ -201,7 +193,7 @@ Agent Query "支付流程"
 
 ---
 
-## Tech Stack / 技术栈
+## Tech Stack
 
 | Layer | Tech |
 |---|---|
@@ -216,15 +208,14 @@ Agent Query "支付流程"
 
 ---
 
-## License / 许可证
+## License
 
-Copyright © 2026 Muti-MemoAgent Contributors. All rights reserved.
+Copyright © 2026 Muti-MemoAgent Contributors.
 
 See [LICENSE](./LICENSE) for details.
 
 ---
 
 <p align="center">
-  <em>Memories that don't just store — they think, connect, and evolve.</em><br>
-  <em>记忆不只是存储 — 它们会思考、关联、进化。</em>
+  <em>Memories that don't just store — they think, connect, and evolve.</em>
 </p>
