@@ -11,8 +11,10 @@
 </p>
 
 <p align="center">
+  <img src="https://img.shields.io/badge/macOS-supported-blue" alt="macOS" />
+  <img src="https://img.shields.io/badge/Windows-supported-blue" alt="Windows" />
+  <img src="https://img.shields.io/badge/Linux-supported-blue" alt="Linux" />
   <img src="https://img.shields.io/badge/Language-TypeScript-blue" alt="TypeScript" />
-  <img src="https://img.shields.io/badge/License-Custom-orange" alt="License" />
   <img src="https://img.shields.io/badge/PRs-Welcome-brightgreen" alt="PRs Welcome" />
 </p>
 
@@ -33,46 +35,75 @@ Muti-MemoAgent is a **self-evolving memory system** for AI agents. Install it on
 
 ## 🚀 Quickstart
 
-### One Command
+### Prerequisites
+
+- **Node.js** ≥ 18
+- **pnpm** (install: `npm install -g pnpm`)
+- **Xiami account** (free — auto-guided during setup)
+
+### Install
+
+<table>
+<tr>
+<td width="33%">
+
+#### 🍎 macOS
 
 ```bash
-git clone https://github.com/ping/Muti-MemoAgent.git
-cd Muti-MemoAgent && pnpm install
-# → Browser opens → Register on Xiami → Get API key
-npx mutimemoagent init --xiami-key xiami_sk_xxx
+git clone https://github.com/YPing-A/Muti-MemoAgent.git
+cd Muti-MemoAgent
+pnpm install
+# → Browser opens → Register → Get key
+mutimemoagent init --xiami-key xiami_sk_xxx
 ```
+
+</td>
+<td width="33%">
+
+#### 🪟 Windows
+
+```powershell
+git clone https://github.com/YPing-A/Muti-MemoAgent.git
+cd Muti-MemoAgent
+pnpm install
+# → Browser opens → Register → Get key
+mutimemoagent init --xiami-key xiami_sk_xxx
+```
+
+</td>
+<td width="33%">
+
+#### 🐧 Linux
+
+```bash
+git clone https://github.com/YPing-A/Muti-MemoAgent.git
+cd Muti-MemoAgent
+pnpm install
+# → Browser opens → Register → Get key
+mutimemoagent init --xiami-key xiami_sk_xxx
+```
+
+</td>
+</tr>
+</table>
+
+> **macOS note:** `pnpm install` works out of the box — Xcode CLI tools provide the C++ compiler for `better-sqlite3`.
+>
+> **Windows note:** If `better-sqlite3` fails to compile, install [Visual Studio Build Tools](https://visualstudio.microsoft.com/downloads/#build-tools-for-visual-studio-2022) with "Desktop development with C++" workload, then run `pnpm rebuild better-sqlite3`.
+>
+> **Linux note:** Install `build-essential` (Debian/Ubuntu) or equivalent before `pnpm install` if better-sqlite3 fails.
 
 ### Daily Use
 
 ```bash
-mutimemoagent onboard                              # First-time setup wizard
-mutimemoagent init --xiami-key xiami_sk_xxx        # Initialize project
-mutimemoagent index && mutimemoagent analyze            # Index + understand code
-mutimemoagent search "payment flow"                 # Search memories
-mutimemoagent memo "deploy: docker → k8s"           # Save a memory
-mutimemoagent watch                                 # Auto-sync on save
-mutimemoagent dashboard                             # Visual graph
+mutimemoagent onboard                            # First-time wizard
+mutimemoagent init --xiami-key xiami_sk_xxx      # Init project
+mutimemoagent index && mutimemoagent analyze     # Index + understand
+mutimemoagent search "payment flow"               # Search memories
+mutimemoagent memo "deploy: docker → k8s"         # Save memory
+mutimemoagent watch                               # Auto-sync on save
+mutimemoagent dashboard                           # Visual graph
 ```
-
-### For AI Agents
-
-```bash
-mutimemoagent onboard
-mutimemoagent search "authentication implementation"
-mutimemoagent memo "user prefers pnpm over npm" --type preference
-```
-
----
-
-## 📦 Deployment Options
-
-| | Library | Self-Hosted | Cloud |
-|---|---|---|---|
-| **Best for** | Local dev, testing | Team infrastructure | Zero-ops production |
-| **Setup** | `pnpm install` | `pnpm install` + Xiami account | [app.xiami.aiznrc.com](https://xiami.aiznrc.com) |
-| **Storage** | SQLite (local) | SQLite + Xiami API | Xiami (Neo4j + RAG) |
-| **Multi-Project** | Manual | ✅ Automatic | ✅ Automatic |
-| **Cross-Agent** | — | ✅ Discovery engine | ✅ Discovery + Evolution |
 
 ---
 
@@ -82,7 +113,7 @@ mutimemoagent memo "user prefers pnpm over npm" --type preference
 |---|---|---|
 | 🧠 **Auto-Ingest** | Git hooks + file watch + dialogue sampling | Zero-effort memory capture |
 | 👤 **User Profile** | Auto-extract preferences, habits, lessons | AI knows you without forms |
-| 🔍 **Code Index** | 20+ languages, call graphs, FTS5 search | 58% fewer tool calls* |
+| 🔍 **Code Index** | 20+ languages, call graphs, FTS5 search | 58% fewer tool calls |
 | 🤝 **Cross-Agent** | Auto-discover hidden project links | One search finds all related code |
 | 🌱 **Self-Evolution** | Split, merge, consolidate agents | Memory organizes itself |
 | 🧹 **Forgetting** | Time-decay + dream consolidation | Stays lean automatically |
@@ -90,30 +121,15 @@ mutimemoagent memo "user prefers pnpm over npm" --type preference
 
 ---
 
-## 🎯 Use Cases
+## 📦 Deployment Options
 
-| Scenario | How It Helps |
-|---|---|
-| **AI Coding Agents** (Claude Code, Cursor, Copilot) | Pre-indexed code graph → instant answers, token savings |
-| **Multi-Project Teams** | Cross-project knowledge sharing → no reinventing |
-| **Onboarding** | Guided tours + architecture maps → ramp up in hours |
-| **Personal AI Assistant** | Profile auto-learns preferences → personalized responses |
-| **Knowledge Management** | Wiki analysis → force-directed knowledge graphs |
-
----
-
-## 🏗️ Architecture
-
-```
-Search "payment" → Local SQLite (0.5ms) + Xiami Cloud (200ms) → Merged results
-```
-
-| Layer | Role | Latency |
-|---|---|---|
-| L1: Local SQLite | Current project, always available | <1ms |
-| L2: Xiami Cloud | All projects, profiles, relations | ~200ms |
-| Evolution Engine | Nightly auto-optimize agent structure | Scheduled |
-| Cognitive Pipeline | On-demand deep code analysis | Per analysis |
+| | Library | Self-Hosted | Cloud |
+|---|---|---|---|
+| **Best for** | Local dev, testing | Team infrastructure | Zero-ops production |
+| **Setup** | `pnpm install` | `pnpm install` + Xiami | [app.xiami.aiznrc.com](https://xiami.aiznrc.com) |
+| **Storage** | SQLite (local) | SQLite + Xiami API | Xiami (Neo4j + RAG) |
+| **Multi-Project** | Manual | ✅ Auto | ✅ Auto |
+| **Cross-Agent** | — | ✅ Discovery | ✅ Discovery + Evolution |
 
 ---
 
@@ -141,5 +157,5 @@ dashboard   Open visual graph UI
 Copyright © 2026 Muti-MemoAgent Contributors. See [LICENSE](./LICENSE).
 
 <p align="center">
-  <sub>*Based on CodeGraph benchmark: 16% cheaper, 58% fewer tool calls, 22% faster</sub>
+  <sub>*58% fewer tool calls based on CodeGraph benchmark: 16% cheaper, 22% faster</sub>
 </p>

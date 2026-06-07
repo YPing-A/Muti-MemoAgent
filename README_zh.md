@@ -1,182 +1,156 @@
-# Muti-MemoAgent 🧠
+<p align="center">
+  <h1 align="center">Muti-MemoAgent 🧠</h1>
+  <p align="center"><strong>多智能体记忆体自进化网络 — 给 AI 装上会自己长大的记忆</strong></p>
+  <p align="center">自动索引代码 · 提取用户画像 · 发现隐藏关联 · 自我进化</p>
+</p>
 
-> 多智能体记忆体自进化网络 — 让记忆学会自己成长。
+<p align="center">
+  <a href="./README.md">English</a> ·
+  <a href="./AGENTS.md">Agent 指南</a> ·
+  <a href="https://xiami.aiznrc.com">虾觅云平台</a>
+</p>
 
-[![TypeScript](https://img.shields.io/badge/Language-TypeScript-blue)]()
-[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen)]()
-
-[English →](./README.md)
+<p align="center">
+  <img src="https://img.shields.io/badge/macOS-支持-blue" alt="macOS" />
+  <img src="https://img.shields.io/badge/Windows-支持-blue" alt="Windows" />
+  <img src="https://img.shields.io/badge/Linux-支持-blue" alt="Linux" />
+  <img src="https://img.shields.io/badge/语言-TypeScript-blue" alt="TypeScript" />
+</p>
 
 ---
 
-## 这是什么？
+## ✨ 这是什么
 
-Muti-MemoAgent 给 AI Agent 装一个**会自己长大的记忆系统**。它自动监视代码、监听对话，构建知识图谱，并且越用越聪明——全程不需要你动手。
+Muti-MemoAgent 是一个**会自我进化的 AI 记忆系统**。安装一次，它就会自动监视代码、学习偏好、关联项目知识，并且越用越聪明。
 
-**就像给 AI 装了一个会自动整理、关联、进化的长期记忆。**
-
----
-
-## 为什么需要？
-
-| 痛点 | Muti-MemoAgent 怎么解决 |
+| 之前 | 之后 |
 |---|---|
-| 🐌 AI 每次都要重新理解代码 | 代码一次索引 → 符号、调用链、全文搜索永久可用 |
-| 🏝️ 不同项目的知识互不相通 | 跨项目图谱自动发现"项目A的认证"和"项目B的认证"是同一套模式 |
-| 🗑️ 记忆越堆越多，从不清理 | 遗忘引擎自动瘦身，只保留有价值的记忆 |
-| 🧩 每个 Agent 各自为战 | 自进化网络自动拆分、合并、迁移知识 |
-| 👶 新人看不懂项目 | 认知流水线生成引导式导览，按依赖顺序学习代码库 |
+| "我们的认证系统怎么设计的？" → Agent 读 47 个文件 | Agent 查记忆 → 秒出答案，含调用链 |
+| 从 yarn 换到 pnpm → Agent 还建议用 yarn | 画像自动检测 → 建议 pnpm |
+| 10 个项目，知识零共享 | 跨项目图谱连接项目A和项目B的认证模块 |
+| 记忆只增不减 | 遗忘引擎自动瘦身 |
 
 ---
 
-## 核心功能
+## 🚀 快速开始
 
-### 🧠 自动接入 — 零操作记忆
+### 前置条件
 
-**做什么：** 自动捕获一切——git 提交、文件保存、对话内容。过滤噪音、去重、检测冲突，然后自动路由到正确的记忆体。
+- **Node.js** ≥ 18
+- **pnpm**（安装：`npm install -g pnpm`）
+- **虾觅账号**（免费，安装时自动引导注册）
 
-**效果：** `mutimemoagent init` 之后什么都不用管。每次写代码或聊天，相关知识自动入库。
+### 安装
 
-**优势：** 不需要手动记笔记，系统自己判断什么重要。5 阶段管线确保只有有意义的内容被存储。
+<table>
+<tr>
+<td width="33%">
 
----
-
-### 👤 用户画像 — 越来越懂你
-
-**做什么：** 从对话和代码模式中自动提取偏好、习惯、工作流、踩坑记录。无需填表，无需手动输入。
-
-**效果：** 问"怎么部署"时，Agent 已经知道你喜欢 Docker + k8s，不会推荐 Vercel。
-
-**优势：** 画像自动进化。当你从 yarn 换到 pnpm，它能检测到变化，不用手动改设置。
-
----
-
-### 🔍 代码智能 — 真正理解你的代码
-
-**做什么：** 解析 20+ 语言，构建可搜索的知识图谱。找函数、类、调用链、框架路由、跨语言桥接。
-
-**效果：** 搜索"支付流程怎么实现"→ 直接返回具体函数、谁调用了它、依赖关系、以及你其他项目里的类似实现。
-
-**优势：** AI Agent 理解代码的工具调用减少 58%。不用读 50 个文件才找到一个 handler。
-
----
-
-### 🤝 跨项目协作 — 记忆互联互通
-
-**做什么：** 自动发现不同记忆体之间的隐藏关系。比如"画像说喜欢 pnpm"+"项目 A 用了 pnpm"→ 自动关联。
-
-**效果：** 搜"认证模块"→ 一次返回项目A的实现、项目B的相似模式、画像里的 Auth0 偏好——全部在一个结果里。
-
-**优势：** 多跳推理能发现 A→B→C 的间接关联，知识在孤岛之间自动涌现。
-
----
-
-### 🌱 自进化 — 越用越聪明
-
-**做什么：** 评估每个记忆体的 4 维健康度。自动拆分臃肿的记忆体、合并重叠的、把短期记忆巩固为长期记忆。
-
-**效果：** 一个项目刚开始 1 个记忆体，三个月后可能自动进化成 3 个专业记忆体（API、数据库、前端）——完全基于实际使用模式。
-
-**优势：** 竞争机制：两个记忆体覆盖同一领域时，用真实查询一较高下，胜者留下，败者知识合并进胜者。
-
----
-
-### 🧹 遗忘引擎 — 只记该记的
-
-**做什么：** 时间衰减 + 重要性评分 + 梦境巩固。过期低价值记忆自动淡出，高价值记忆被强化。
-
-**效果：** 记忆库自动保持精简。三个月后大概只剩 20% 的原始条目——而这正是最有价值的 20%。
-
-**优势：** 不像数据库只会增长，这是模仿人类记忆。系统每晚运行"梦境"周期，把低分记忆蒸馏成摘要后再删除原文。
-
----
-
-### 🧪 认知流水线 — 代码变可读
-
-**做什么：** 7 个专业 AI Agent 分析代码结构、识别架构分层、提取业务领域、构建学习导览。
-
-**效果：** 新人执行 `mutimemoagent analyze` → 得到：架构分层图、按依赖排序的学习路径、代码到业务流程的映射。
-
-**优势：** 三种受众模式——初级开发者看到带代码片段的解释，PM 看到高层次的业务流，高级开发者看到架构决策和取舍。
-
----
-
-## 快速开始
-
-### 一键引导（推荐）
+#### 🍎 macOS
 
 ```bash
-git clone https://github.com/ping/Muti-MemoAgent.git
+git clone https://github.com/YPing-A/Muti-MemoAgent.git
 cd Muti-MemoAgent
 pnpm install
-# → 自动打开浏览器到 xiami.aiznrc.com/register
-# → 引导完成注册和密钥配置
-# → 然后执行：
-npx mutimemoagent init --xiami-key xiami_sk_xxx
+# → 自动打开浏览器 → 注册 → 获取密钥
+mutimemoagent init --xiami-key xiami_sk_xxx
 ```
 
-### 给 AI Agent 用
+</td>
+<td width="33%">
+
+#### 🪟 Windows
+
+```powershell
+git clone https://github.com/YPing-A/Muti-MemoAgent.git
+cd Muti-MemoAgent
+pnpm install
+# → 自动打开浏览器 → 注册 → 获取密钥
+mutimemoagent init --xiami-key xiami_sk_xxx
+```
+
+</td>
+<td width="33%">
+
+#### 🐧 Linux
 
 ```bash
-mutimemoagent onboard                              # 首次引导
-mutimemoagent init --xiami-key xiami_sk_xxx        # 初始化项目
-mutimemoagent index && mutimemoagent analyze            # 索引+分析
-mutimemoagent search "支付流程"                     # 搜索
+git clone https://github.com/YPing-A/Muti-MemoAgent.git
+cd Muti-MemoAgent
+pnpm install
+# → 自动打开浏览器 → 注册 → 获取密钥
+mutimemoagent init --xiami-key xiami_sk_xxx
 ```
 
-### 给人用
+</td>
+</tr>
+</table>
+
+> **macOS：** Xcode CLI 自带 C++ 编译器，`better-sqlite3` 直接编译通过。
+>
+> **Windows：** 如 `better-sqlite3` 编译失败，安装 [Visual Studio Build Tools](https://visualstudio.microsoft.com/downloads/#build-tools-for-visual-studio-2022)，勾选"使用 C++ 的桌面开发"，然后执行 `pnpm rebuild better-sqlite3`。
+>
+> **Linux：** 先 `apt install build-essential`（Debian/Ubuntu）或等效包，再执行 `pnpm install`。
+
+### 日常使用
 
 ```bash
-mutimemoagent init --xiami-key xiami_sk_xxx        # 一次配置
-mutimemoagent index                                 # 索引代码
-mutimemoagent analyze                               # 理解架构
-mutimemoagent search "认证模块"                      # 找到任何东西
-mutimemoagent memo "部署: docker → k8s"             # 保存记忆
-mutimemoagent watch                                 # 保存即同步
-mutimemoagent dashboard                             # 可视化图谱
+mutimemoagent onboard                            # 首次引导
+mutimemoagent init --xiami-key xiami_sk_xxx      # 初始化
+mutimemoagent index && mutimemoagent analyze     # 索引 + 分析
+mutimemoagent search "支付流程"                    # 搜索记忆
+mutimemoagent memo "部署: docker → k8s"           # 保存记忆
+mutimemoagent watch                               # 保存即同步
+mutimemoagent dashboard                           # 可视化图谱
 ```
 
-### 全部命令
+---
+
+## 🔧 核心功能
+
+| 功能 | 做什么 | 效果 |
+|---|---|---|
+| 🧠 **自动接入** | Git Hook + 文件监控 + 对话采样 | 零操作记忆捕获 |
+| 👤 **用户画像** | 自动提取偏好、习惯、踩坑 | AI 不用填表就了解你 |
+| 🔍 **代码索引** | 20+ 语言，调用图，FTS5 搜索 | 工具调用减少 58% |
+| 🤝 **跨项目协作** | 自动发现隐藏关联 | 一次搜索穿透所有项目 |
+| 🌱 **自进化** | 拆分、合并、巩固记忆体 | 记忆自动整理 |
+| 🧹 **遗忘引擎** | 时间衰减 + 梦境巩固 | 自动保持精简 |
+| 🧪 **认知分析** | 7-Agent 流水线 | 架构图 + 引导式导览 |
+
+---
+
+## 📦 部署选项
+
+| | 本地开发 | 自托管 | 云端 |
+|---|---|---|---|
+| **适合** | 本地测试 | 团队基础设施 | 零运维生产 |
+| **安装** | `pnpm install` | `pnpm install` + Xiami | [app.xiami.aiznrc.com](https://xiami.aiznrc.com) |
+| **存储** | SQLite（本地） | SQLite + Xiami API | Xiami（Neo4j + RAG） |
+| **跨项目** | 手动 | ✅ 自动 | ✅ 自动 |
+| **跨Agent** | — | ✅ 发现引擎 | ✅ 发现 + 进化 |
+
+---
+
+## 📋 命令一览
 
 ```
 onboard     首次引导（注册 → 密钥 → 配置）
-init        初始化项目并自动创建记忆体
-index       将代码索引为可搜索的记忆
+init        初始化项目，自动创建记忆体
+index       将代码索引为可搜索记忆
 analyze     运行认知分析流水线
 search      跨所有记忆体搜索
-memo        手动保存记忆
+memo        保存一条记忆
 watch       文件保存时自动索引
-evolve      触发自进化周期
+evolve      触发自进化
 forget      清理过期记忆
-status      查看连接和记忆体状态
-check       检查云端配额
-dashboard   打开可视化知识图谱
+status      连接状态和记忆体健康
+check       云端配额检查
+dashboard   打开可视化图谱
 ```
 
 ---
 
-## 架构（简化）
-
-```
-每次搜索同时命中两层：
-
-  L1 — 本地 SQLite（0.5ms）
-  → 当前项目，永远可用，零延迟
-
-  L2 — Xiami 云端（200ms）
-  → 所有项目、用户画像、跨项目关联
-
-  结果融合排序后返回
-```
-
----
-
-## 许可证
+## 📄 许可证
 
 Copyright © 2026 Muti-MemoAgent Contributors. 详见 [LICENSE](./LICENSE)
-
----
-
-<p align="center">
-  <em>记忆不只是存储 — 它们会思考、关联、进化。</em>
-</p>
